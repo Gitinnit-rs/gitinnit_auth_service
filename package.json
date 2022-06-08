@@ -1,0 +1,26 @@
+{
+  "name": "auth_service",
+  "version": "1.0.0",
+  "description": "auth service for the org",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon ./src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gitinnit-rs/Auth-Service.git"
+  },
+  "author": "Gitinnit",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Gitinnit-rs/Auth-Service/issues"
+  },
+  "homepage": "https://github.com/Gitinnit-rs/Auth-Service#readme",
+  "dependencies": {
+    "fastify": "^3.29.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.16"
+  }
+}
