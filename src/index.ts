@@ -64,11 +64,11 @@ passport.use(
   ),
 );
 
-let returnUrl = "http://localhost:8000/user";
+let returnUrl = "";
 
 // Defining the routes for the application
 app.get("/login", (req, res) => {
-  console.log(req.query);
+  // expected return url format: "http://localhost:3000/login?returnUrl=" + encodeURIComponent(returnUrl with the endpoint where expecting post call)
   returnUrl = req.query.returnUrl as string;
   res.send(
     "<a href='/auth/github' target=_blank onclick='return window.close();'>AUTH WITH GITHUB </a>",
@@ -96,12 +96,17 @@ app.get(
 
 app.get("/auth/result", async (req, res) => {
   // Successful authentication, redirect home.
-  console.log("SENDING USER");
-  await axios.post(returnUrl, {
-    user: req.user,
-  });
-  console.log("SENT USER");
-  res.send("<script>window.close();</script>");
+  if (returnUrl === "") {
+    res.send("<h1>SOMETHING WENT WRONG</h1>");
+    return;
+  } else {
+    await axios.post(returnUrl, {
+      user: req.user,
+    });
+    res.send("<script>window.close();</script>");
+    return;
+  }
+  res.send("RESULT");
 });
 
 app.listen(port, () => {
