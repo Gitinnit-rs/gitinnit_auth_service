@@ -25,7 +25,7 @@ app.use(
     saveUninitialized: false,
     cookie: { path: "/", secure: false },
     name: SESSION_NAME,
-  }),
+  })
 );
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -52,7 +52,7 @@ passport.use(
       accessToken: string,
       refreshToken: string,
       profile: Record<string, string>,
-      done: any,
+      done: any
     ) => {
       if (!accessToken) {
         let err = new Error("No accessToken Found");
@@ -60,8 +60,8 @@ passport.use(
       }
       profile.accessToken = accessToken;
       return done(null, profile);
-    },
-  ),
+    }
+  )
 );
 
 let returnUrl = "";
@@ -71,7 +71,7 @@ app.get("/login", (req, res) => {
   // expected return url format: "http://localhost:3000/login?returnUrl=" + encodeURIComponent(returnUrl with the endpoint where expecting post call)
   returnUrl = req.query.returnUrl as string;
   res.send(
-    "<a href='/auth/github' target=_blank onclick='return window.close();'>AUTH WITH GITHUB </a>",
+    "<a href='/auth/github' target=_blank onclick='return window.close();'>AUTH WITH GITHUB </a>"
   );
 });
 app.get(
@@ -81,7 +81,7 @@ app.get(
   }),
   function (req, res) {
     // functions is not called ever
-  },
+  }
 );
 
 app.get(
@@ -91,7 +91,7 @@ app.get(
     if (req.user) {
       res.redirect("/auth/result");
     }
-  },
+  }
 );
 
 app.get("/auth/result", async (req, res) => {
@@ -100,8 +100,14 @@ app.get("/auth/result", async (req, res) => {
     res.send("<h1>SOMETHING WENT WRONG</h1>");
     return;
   } else {
-    await axios.post(returnUrl, {
-      user: req.user,
+    // await axios.post(returnUrl, {
+    //   user: req.user,
+    // });
+    // console.log({ user: req.user });
+    await axios.get(returnUrl, {
+      params: {
+        accessToken: (req.user as any).accessToken,
+      },
     });
     res.send("<script>window.close();</script>");
     return;

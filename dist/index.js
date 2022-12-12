@@ -61,10 +61,10 @@ passport_1.default.use(new passport_github2_1.Strategy({
     profile.accessToken = accessToken;
     return done(null, profile);
 }));
-let returnUrl = "http://localhost:8000/user";
+let returnUrl = "";
 // Defining the routes for the application
 app.get("/login", (req, res) => {
-    console.log(req.query);
+    // expected return url format: "http://localhost:3000/login?returnUrl=" + encodeURIComponent(returnUrl with the endpoint where expecting post call)
     returnUrl = req.query.returnUrl;
     res.send("<a href='/auth/github' target=_blank onclick='return window.close();'>AUTH WITH GITHUB </a>");
 });
@@ -80,12 +80,24 @@ app.get("/auth/github/callback", passport_1.default.authenticate("github", { fai
 });
 app.get("/auth/result", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // Successful authentication, redirect home.
-    console.log("SENDING USER");
-    yield axios_1.default.post(returnUrl, {
-        user: req.user,
-    });
-    console.log("SENT USER");
-    res.send("<script>window.close();</script>");
+    if (returnUrl === "") {
+        res.send("<h1>SOMETHING WENT WRONG</h1>");
+        return;
+    }
+    else {
+        // await axios.post(returnUrl, {
+        //   user: req.user,
+        // });
+        // console.log({ user: req.user });
+        yield axios_1.default.get(returnUrl, {
+            params: {
+                accessToken: req.user.accessToken,
+            },
+        });
+        res.send("<script>window.close();</script>");
+        return;
+    }
+    res.send("RESULT");
 }));
 app.listen(port, () => {
     console.log(`[server]: Server is running at https://localhost:${port}`);
