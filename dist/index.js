@@ -61,12 +61,21 @@ passport_1.default.use(new passport_github2_1.Strategy({
     profile.refreshToken = refreshToken;
     return done(null, profile);
 }));
+<<<<<<< HEAD
 // Defining the routes for the application
 app.get("/login", (req, res) => {
     // expected return url format: "http://localhost:3000/login?returnUrl=" + encodeURIComponent(returnUrl with the endpoint where expecting post call)
     let returnUrl = req.query.returnUrl;
     // TODO: Create a webpage to render options for auth
     res.send(`<a href='/auth/github?returnUrl=${returnUrl}' target=_blank onclick='return window.close();'>AUTH WITH GITHUB </a>`);
+=======
+let returnUrl = "";
+// Defining the routes for the application
+app.get("/login", (req, res) => {
+    // expected return url format: "http://localhost:3000/login?returnUrl=" + encodeURIComponent(returnUrl with the endpoint where expecting post call)
+    returnUrl = req.query.returnUrl;
+    res.send("<a href='/auth/github' target=_blank onclick='return window.close();'>AUTH WITH GITHUB </a>");
+>>>>>>> 8ec434bacbe1e7c39a015b2053dd30446ec15667
 });
 app.get("/auth/github", function (req, res) {
     const auth = passport_1.default.authenticate("github", {
@@ -83,11 +92,15 @@ app.get("/auth/github/callback", passport_1.default.authenticate("github", { fai
 });
 app.get("/auth/result", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // Successful authentication, redirect home.
+<<<<<<< HEAD
     let returnUrl = req.query.returnUrl;
+=======
+>>>>>>> 8ec434bacbe1e7c39a015b2053dd30446ec15667
     if (returnUrl === "") {
         res.send("<h1>SOMETHING WENT WRONG</h1>");
         return;
     }
+<<<<<<< HEAD
     else if (req.user) {
         returnUrl +=
             "?access_token=" +
@@ -96,6 +109,22 @@ app.get("/auth/result", (req, res) => __awaiter(void 0, void 0, void 0, function
                 req.user.refreshToken;
         res.redirect(returnUrl);
     }
+=======
+    else {
+        // await axios.post(returnUrl, {
+        //   user: req.user,
+        // });
+        // console.log({ user: req.user });
+        yield axios_1.default.get(returnUrl, {
+            params: {
+                accessToken: req.user.accessToken,
+            },
+        });
+        res.send("<script>window.close();</script>");
+        return;
+    }
+    res.send("RESULT");
+>>>>>>> 8ec434bacbe1e7c39a015b2053dd30446ec15667
 }));
 app.listen(port, () => {
     console.log(`[server]: Server is running at https://localhost:${port}`);
