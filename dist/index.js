@@ -19,7 +19,6 @@ const express_session_1 = __importDefault(require("express-session"));
 const body_parser_1 = __importDefault(require("body-parser"));
 const passport_1 = __importDefault(require("passport"));
 const passport_github2_1 = require("passport-github2");
-const axios_1 = __importDefault(require("axios"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const port = process.env.PORT;
@@ -59,33 +58,44 @@ passport_1.default.use(new passport_github2_1.Strategy({
         return done(err, profile);
     }
     profile.accessToken = accessToken;
+    profile.refreshToken = refreshToken;
     return done(null, profile);
 }));
-let returnUrl = "http://localhost:8000/user";
 // Defining the routes for the application
 app.get("/login", (req, res) => {
-    console.log(req.query);
-    returnUrl = req.query.returnUrl;
-    res.send("<a href='/auth/github' target=_blank onclick='return window.close();'>AUTH WITH GITHUB </a>");
+    // expected return url format: "http://localhost:3000/login?returnUrl=" + encodeURIComponent(returnUrl with the endpoint where expecting post call)
+    let returnUrl = req.query.returnUrl;
+    // TODO: Create a webpage to render options for auth
+    res.send(`<a href='/auth/github?returnUrl=${returnUrl}' target=_blank onclick='return window.close();'>AUTH WITH GITHUB </a>`);
 });
-app.get("/auth/github", passport_1.default.authenticate("github", {
-    scope: ["user:email", "repo", "repo:invite", "user:follow", "project"],
-}), function (req, res) {
+app.get("/auth/github", function (req, res) {
+    const auth = passport_1.default.authenticate("github", {
+        scope: ["user:email", "repo", "repo:invite", "user:follow", "project"],
+        state: JSON.stringify(req.query),
+    });
+    auth(req, res);
     // functions is not called ever
 });
 app.get("/auth/github/callback", passport_1.default.authenticate("github", { failureRedirect: "/login" }), function (req, res) {
     if (req.user) {
-        res.redirect("/auth/result");
+        res.redirect(`/auth/result?returnUrl=${JSON.parse(req.query.state).returnUrl}`);
     }
 });
 app.get("/auth/result", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // Successful authentication, redirect home.
-    console.log("SENDING USER");
-    yield axios_1.default.post(returnUrl, {
-        user: req.user,
-    });
-    console.log("SENT USER");
-    res.send("<script>window.close();</script>");
+    let returnUrl = req.query.returnUrl;
+    if (returnUrl === "") {
+        res.send("<h1>SOMETHING WENT WRONG</h1>");
+        return;
+    }
+    else if (req.user) {
+        returnUrl +=
+            "?access_token=" +
+                req.user.accessToken +
+                "&&refresh_token" +
+                req.user.refreshToken;
+        res.redirect(returnUrl);
+    }
 }));
 app.listen(port, () => {
     console.log(`[server]: Server is running at https://localhost:${port}`);
