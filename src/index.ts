@@ -49,7 +49,7 @@ passport.use(
     },
     (
       accessToken: string,
-      refreshToken: string,
+      refreshToken: any,
       profile: Record<string, string>,
       done: any,
     ) => {
@@ -107,12 +107,12 @@ app.get("/auth/result", async (req, res) => {
     returnUrl +=
       "?access_token=" +
       req.user.accessToken +
-      "&&refresh_token" +
+      "&&refresh_token=" +
       req.user.refreshToken;
     res.redirect(returnUrl);
   }
 });
 
 app.listen(port, () => {
-  console.log(`[server]: Server is running at https://localhost:${port}`);
+  console.log(`[server]: Server is running at http://localhost:${port}`);
 });
