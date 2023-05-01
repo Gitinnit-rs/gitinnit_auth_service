@@ -18,6 +18,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const express_session_1 = __importDefault(require("express-session"));
 const body_parser_1 = __importDefault(require("body-parser"));
 const passport_1 = __importDefault(require("passport"));
+const refresh = require("passport-oauth2-refresh");
 const passport_github2_1 = require("passport-github2");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -48,19 +49,24 @@ passport_1.default.deserializeUser(function (obj, done) {
     done(null, obj);
 });
 // Defining the Strategies
-passport_1.default.use(new passport_github2_1.Strategy({
+const githubStrategy = new passport_github2_1.Strategy({
     clientID: CLIENT_ID,
     clientSecret: CLIENT_SECRET,
     callbackURL: CALLBACK_URL,
+    authorizationURL: "https://github.com/login/oauth/authorize",
+    tokenURL: "https://github.com/login/oauth/access_token",
 }, (accessToken, refreshToken, profile, done) => {
     if (!accessToken) {
         let err = new Error("No accessToken Found");
         return done(err, profile);
     }
+    console.log(accessToken, refreshToken, done);
     profile.accessToken = accessToken;
     profile.refreshToken = refreshToken;
     return done(null, profile);
-}));
+});
+passport_1.default.use(githubStrategy);
+refresh.use(githubStrategy);
 // // Defining the routes for the application
 // app.get("/login", (req, res) => {
 //   // expected return url format: "http://localhost:3000/login?returnUrl=" + encodeURIComponent(returnUrl with the endpoint where expecting post call)
@@ -72,13 +78,19 @@ passport_1.default.use(new passport_github2_1.Strategy({
 // });
 app.get("/auth/github", function (req, res) {
     let returnUrl = req.query.returnUrl;
-    const auth = passport_1.default.authenticate("github", {
+    const auth = passport_1.default.authorize("github", {
+        accessType: "offline",
+        prompt: "consent",
         scope: ["user:email", "repo", "repo:invite", "user:follow", "project"],
         state: JSON.stringify({ returnUrl }),
     });
     auth(req, res);
 });
-app.get("/auth/github/callback", passport_1.default.authenticate("github", { failureRedirect: "/login" }), function (req, res) {
+app.get("/auth/github/callback", passport_1.default.authenticate("github", {
+    accessType: "offline",
+    prompt: "consent",
+    failureRedirect: "/login",
+}), function (req, res) {
     if (req.user) {
         res.redirect(`/auth/result?returnUrl=${JSON.parse(req.query.state).returnUrl}`);
     }
@@ -93,8 +105,10 @@ app.get("/auth/result", (req, res) => __awaiter(void 0, void 0, void 0, function
     else if (req.user) {
         returnUrl +=
             "?access_token=" +
+                // @ts-ignore
                 req.user.accessToken +
                 "&&refresh_token=" +
+                // @ts-ignore
                 req.user.refreshToken;
         res.redirect(returnUrl);
     }

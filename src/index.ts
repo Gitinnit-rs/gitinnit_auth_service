@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import session from "express-session";
 import bodyParser from "body-parser";
 import passport from "passport";
+const refresh = require("passport-oauth2-refresh");
 import { Strategy as GithubStrategy } from "passport-github2";
 dotenv.config();
 
@@ -40,29 +41,32 @@ passport.deserializeUser(function (obj: any, done) {
 });
 
 // Defining the Strategies
-passport.use(
-  new GithubStrategy(
-    {
-      clientID: CLIENT_ID,
-      clientSecret: CLIENT_SECRET,
-      callbackURL: CALLBACK_URL,
-    },
-    (
-      accessToken: string,
-      refreshToken: any,
-      profile: Record<string, string>,
-      done: any,
-    ) => {
-      if (!accessToken) {
-        let err = new Error("No accessToken Found");
-        return done(err, profile);
-      }
-      profile.accessToken = accessToken;
-      profile.refreshToken = refreshToken;
-      return done(null, profile);
-    },
-  ),
+const githubStrategy = new GithubStrategy(
+  <any>{
+    clientID: CLIENT_ID,
+    clientSecret: CLIENT_SECRET,
+    callbackURL: CALLBACK_URL,
+    authorizationURL: "https://github.com/login/oauth/authorize",
+    tokenURL: "https://github.com/login/oauth/access_token",
+  },
+  (
+    accessToken: string,
+    refreshToken: string,
+    profile: Record<string, string>,
+    done: Function,
+  ) => {
+    if (!accessToken) {
+      let err = new Error("No accessToken Found");
+      return done(err, profile);
+    }
+    console.log(accessToken, refreshToken, done);
+    profile.accessToken = accessToken;
+    profile.refreshToken = refreshToken;
+    return done(null, profile);
+  },
 );
+passport.use(githubStrategy);
+refresh.use(githubStrategy);
 
 // // Defining the routes for the application
 // app.get("/login", (req, res) => {
@@ -76,7 +80,10 @@ passport.use(
 
 app.get("/auth/github", function (req, res) {
   let returnUrl = req.query.returnUrl as string;
-  const auth = passport.authenticate("github", {
+
+  const auth = passport.authorize("github", <any>{
+    accessType: "offline",
+    prompt: "consent",
     scope: ["user:email", "repo", "repo:invite", "user:follow", "project"],
     state: JSON.stringify({ returnUrl }),
   });
@@ -85,7 +92,11 @@ app.get("/auth/github", function (req, res) {
 
 app.get(
   "/auth/github/callback",
-  passport.authenticate("github", { failureRedirect: "/login" }),
+  passport.authenticate("github", <any>{
+    accessType: "offline",
+    prompt: "consent",
+    failureRedirect: "/login",
+  }),
   function (req, res) {
     if (req.user) {
       res.redirect(
@@ -106,8 +117,10 @@ app.get("/auth/result", async (req, res) => {
   } else if (req.user) {
     returnUrl +=
       "?access_token=" +
+      // @ts-ignore
       req.user.accessToken +
       "&&refresh_token=" +
+      // @ts-ignore
       req.user.refreshToken;
     res.redirect(returnUrl);
   }
